@@ -1,10 +1,7 @@
 {
-  "name": "twilight-site",
+  "name": "cloud-gallery",
   "version": "1.0.0",
-  "description": "迎日暮光云 Twilight 官网 - 实时社区（零依赖，纯 Node 标准库）",
-  "main": "server.js",
-  "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js"
-  }
+  "private": true,
+  "scripts": { "start": "node server.js" },
+  "dependencies": {}
 }
