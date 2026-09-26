@@ -3,43 +3,43 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<标题>迎日暮光云 // 黄昏</标题>
+<title>迎日暮光云 // TWILIGHT</title>
 <style>
 :root {
-  --背景色: #F5EFE0; --浅色背景: #FBF6EA; --前景色: #2C2410; --次级前景色: #8C8268;
+  --bg: #F5EFE0; --bg-light: #FBF6EA; --fg: #2C2410; --fg-sub: #8C8268;
   --line: #E0D5B8; --line-light: #EDE5CC; --accent: #C4956A;
   --vhs-r: #D4534A; --vhs-y: #D4A839; --vhs-b: #6B5F9E;
   --font-stack: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", sans-serif;
-  --font-mono: "SF Mono", "Consolas", "Menlo", 等宽字体;
+  --font-mono: "SF Mono", "Consolas", "Menlo", monospace;
 }
-* { box-sizing: border-box; -webkit-tap-highlight-color: 透明; }
-html, body { margin: 0; 内边距: 0; 高度: 100%; 背景: 变量(--bg); 颜色: 变量(--fg); 字体系列: 变量(--font-stack); 溢出: 隐藏; }
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; padding: 0; height: 100%; background: var(--bg); color: var(--fg); font-family: var(--font-stack); overflow: hidden; }
 
-.屏幕 { 位置: 固定; 内边距: 0; 显示: 弹性布局; 弹性方向: 垂直; 层叠顺序: 10; }
-.隐藏 { display: none !important; }
+.screen { position: fixed; inset: 0; display: flex; flex-direction: column; z-index: 10; }
+.hidden { display: none !important; }
 .mono { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.5px; color: var(--fg-sub); }
 
 /* 1. 身份验证 */
 #auth { padding: 48px 32px; justify-content: center; max-width: 480px; margin: 0 auto; width: 100%; background: var(--bg); }
-.品牌 { 文本对齐: 居中; 底部外边距: 48像素; }
-.品牌 h1 { 字体大小: 24px; 字体粗细: 600; 字距: 8px; 外边距: 0 0 12px; 颜色: 变量(--fg); }
-.品牌 .子 { 字体大小: 11px; 字距: 6px; 颜色: 变量(--fg-sub); 文本转换: 大写; }
+.brand { text-align: center; margin-bottom: 48px; }
+.brand h1 { font-size: 24px; font-weight: 600; letter-spacing: 8px; margin: 0 0 12px; color: var(--fg); }
+.brand .sub { font-size: 11px; letter-spacing: 6px; color: var(--fg-sub); text-transform: uppercase; }
 .vhs-bar { display: flex; height: 2px; width: 80px; margin: 24px auto 0; overflow: hidden; }
 .vhs-bar div { flex: 1; }
 .vhs-bar .r { background: var(--vhs-r); } .vhs-bar .y { background: var(--vhs-y); } .vhs-bar .b { background: var(--vhs-b); }
 .auth-btn { display: flex; align-items: center; justify-content: space-between; padding: 18px 20px; border: 1px solid var(--line); border-radius: 12px; margin-bottom: 12px; font-size: 15px; background: var(--bg-light); transition: all 0.2s; }
 .auth-btn:active { background: var(--line-light); }
-.auth-btn.作者 { border-color: var(--accent); }
+.auth-btn.author { border-color: var(--accent); }
 .auth-btn.guest { color: var(--fg-sub); }
 .auth-btn .arrow { color: var(--fg-sub); font-family: var(--font-mono); }
-#keyInput { width: 100%; padding: 16px; border: 1px solid var(--line); border-radius: 12px; margin-bottom: 12px; font-size: 15px; 大纲: 无; 文本对齐: 居中; 字间距: 4px; 背景: var(--bg-light); 颜色: var(--fg); }
+#keyInput { width: 100%; padding: 16px; border: 1px solid var(--line); border-radius: 12px; margin-bottom: 12px; font-size: 15px; outline: none; text-align: center; letter-spacing: 4px; background: var(--bg-light); color: var(--fg); }
 #keyInput:focus { border-color: var(--accent); }
 
 /* 2. 社区入口 */
-#条目 { justify-content: 居中; align-items: 居中; 背景: 变量(--bg); }
-#entry .btn-community { padding: 18px 56px; border: 1px solid var(--fg); border-radius: 40px; font-size: 15px; letter-spacing: 10px; 字体粗细: 500; 背景: 透明; 过渡: 全部 0.3秒; 颜色: var(--fg); }
+#entry { justify-content: center; align-items: center; background: var(--bg); }
+#entry .btn-community { padding: 18px 56px; border: 1px solid var(--fg); border-radius: 40px; font-size: 15px; letter-spacing: 10px; font-weight: 500; background: transparent; transition: all 0.3s; color: var(--fg); }
 #entry .btn-community:hover { background: var(--fg); color: var(--bg); }
-#条目 .社区按钮:激活 { 变换: 缩放(0.96); }
+#entry .btn-community:active { transform: scale(0.96); }
 
 /* 3. 开篇动画 */
 #intro { background: #0a0a0f; justify-content: center; align-items: center; z-index: 20; transition: background 1s ease; }
@@ -433,77 +433,77 @@ async function toggleLike(postId, btn) {
   if (likedPosts.includes(postId)) { toast('已经点过赞了'); return; }
   const posts = await getAllPostsFromDB();
   const post = posts.find(p => p.id === postId);
-  如果 (帖子){.点赞数 =  || []; 将当前个人资料的名称推入已点赞帖子的ID并存储到本地存储中'likedPosts'，JSON字符串化按钮类名列表添加'liked'查询选择器'.like-count'文本内容长度提示框'点赞成功'}
+  if (post) { post.likes = post.likes || []; post.likes.push(currentProfile.name); await savePostToDB(post); likedPosts.push(postId); localStorage.setItem('likedPosts', JSON.stringify(likedPosts)); btn.classList.add('liked'); btn.querySelector('.like-count').textContent = post.likes.length; toast('点赞成功'); }
 }
 
 // ===== 弹幕 =====
-异步 函数 sendDanmaku(帖子ID, 输入内容) {
-  常量 文本 = input.value.trim(); if (!text) return;
+async function sendDanmaku(postId, input) {
+  const text = input.value.trim(); if (!text) return;
   const posts = await getAllPostsFromDB();
   const post = posts.find(p => p.id === postId);
-  如果 (帖子) { 帖子.弹幕 = 帖子.弹幕 || []; 帖子.弹幕.推送({ 用户: 当前个人资料.名称, 文本, 时间: 日期.现在() }); 等待 将帖子保存到数据库(帖子); 输入.值 = ''; 等待 渲染动态(); }
+  if (post) { post.danmaku = post.danmaku || []; post.danmaku.push({ user: currentProfile.name, text, time: Date.now() }); await savePostToDB(post); input.value = ''; await renderFeed(); }
 }
-函数 blockDm(postId, time) { 常量 key = `${postId}_${time}`; if (!blockedDms.包含(key)) { blockedDms.推送(key); 本地存储.setItem('blockedDms', JSON.字符串化(blockedDms)); } 渲染动态(); 提示('已屏蔽该弹幕'); }
-异步 function withdrawDanmaku(postId, time) {
-  如果 (!confirm('确定撤回这条弹幕吗？')) 返回;
-  const posts = 等待 getAllPostsFromDB();
-  常量 发布 = posts.find(p => p.id === postId);
-  如果 (!发布 || !发布.弹幕) 返回;
-  发布.弹幕 = 发布.弹幕.筛选(d => d.时间 !== 时间 || d.用户 !== 当前个人资料.名称);
+function blockDm(postId, time) { const key = `${postId}_${time}`; if (!blockedDms.includes(key)) { blockedDms.push(key); localStorage.setItem('blockedDms', JSON.stringify(blockedDms)); } renderFeed(); toast('已屏蔽该弹幕'); }
+async function withdrawDanmaku(postId, time) {
+  if (!confirm('确定撤回这条弹幕吗？')) return;
+  const posts = await getAllPostsFromDB();
+  const post = posts.find(p => p.id === postId);
+  if (!post || !post.danmaku) return;
+  post.danmaku = post.danmaku.filter(d => d.time !== time || d.user !== currentProfile.name);
   await savePostToDB(post);
-  const key = `${postId}_${time}`; if (!blockedDms.包含(key)) { blockedDms.推送(key); localStorage.设置项('blockedDms', JSON.字符串化(blockedDms)); }
+  const key = `${postId}_${time}`; if (!blockedDms.includes(key)) { blockedDms.push(key); localStorage.setItem('blockedDms', JSON.stringify(blockedDms)); }
   await renderFeed();
-  提示('弹幕已撤回');
+  toast('弹幕已撤回');
 }
 window.withdrawDanmaku = withdrawDanmaku;
 
 // ===== 预告到期自动消失 =====
-函数 checkExpiredPreviews() {
-  从数据库获取所有帖子().然后(posts => {
+function checkExpiredPreviews() {
+  getAllPostsFromDB().then(posts => {
     const now = Date.now(), expired = posts.filter(p => p.column === 'preview' && p.expireAt && now >= p.expireAt);
-    如果 (!expired.长度) 返回;
-    已过期.遍历(p => { p.已撤回 = true; 将帖子保存到数据库(p); });
-    渲染动态();
+    if (!expired.length) return;
+    expired.forEach(p => { p.withdrawn = true; savePostToDB(p); });
+    renderFeed();
   });
 }
 setInterval(checkExpiredPreviews, 30000);
 
 // ===== 发布 =====
-let 待处理文件 = [];
-函数 openPublish() { $('modal').classList.remove('hidden'); $('columnSelect').value = currentTab; }
-函数 closePublish() { $('modal').classList.add('hidden'); pendingFiles = []; $('预览网格').innerHTML = ''; $('postText').value = ''; $('featuredCheck').已选中 = 假; $(‘expireTime’).value = ''; $(‘expireRow’).样式.显示 = ‘none’; 文档.querySelectorAll(‘.upload-btn input’).遍历(i => i.value = ''); }
-
-  常量 文件 = 数组.来自(e.目标.文件);
-  用于 (常量 文件 的 文件) { 常量 编号 = 'file_' + 日期.现在() + '_' + 数学.随机().toString(36).substr(2, 9); await saveFileToDB(文件); pendingFiles.推送({ 编号, 文件, type: 文件.type.startsWith('image') ? 'image' : 'video' }); }
-  renderPreviews(); e.目标.value = '';
+let pendingFiles = [];
+function openPublish() { $('modal').classList.remove('hidden'); $('columnSelect').value = currentTab; }
+function closePublish() { $('modal').classList.add('hidden'); pendingFiles = []; $('previewGrid').innerHTML = ''; $('postText').value = ''; $('featuredCheck').checked = false; $('expireTime').value = ''; $('expireRow').style.display = 'none'; document.querySelectorAll('.upload-btn input').forEach(i => i.value = ''); }
+async function handleFiles(e, type) {
+  const files = Array.from(e.target.files);
+  for (const file of files) { const id = 'file_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9); await saveFileToDB(file); pendingFiles.push({ id, file, type: file.type.startsWith('image') ? 'image' : 'video' }); }
+  renderPreviews(); e.target.value = '';
 }
-函数 renderPreviews() {常量 grid = $'预览网格'; 网格.内HTML''遍历pendingFiles中的pf, i => divdocumentcreateElement'div'className'preview-item'类型 === 'image' ? `">` : `` + `×`appendChild
-函数 removePending(i) { pendingFiles.splice(i, 1); renderPreviews(); }
-异步 function submitPost() {
-  如果 (currentRole !== '作者') { Toast('仅作者可发布'); 返回; }
-  常量 text = $('postText').value.trim();
-  如果 (!text && pendingFiles.length === 0) { Toast('请选择图片/视频或输入文字'); 返回; }
-  常量 isFeatured = $('featuredCheck').checked && pendingFiles.some(f => f.type === 'video');
-  常量 column = $('columnSelect').value;
-  常量 mediaIds = pendingFiles.map(p => p.编号);
-  常量 expireVal = $('expireTime').value;
-  const expireAt = (column === 'preview' && expireVal) ? new 日期(expireVal).getTime() : null;
-  常量 post = { 编号: 日期.现在(), author: currentProfile.name, authorName: currentProfile.name, authorAvatar: currentProfile.avatar, authorAvatarIsText: !!currentProfile.isText, ownerId: makeOwnerId(), 文本, mediaIds, 弹幕: [], 点赞数: [], 是否置顶, 列, 过期时间, 已撤回: false };
+function renderPreviews() { const grid = $('previewGrid'); grid.innerHTML = ''; pendingFiles.forEach((pf, i) => { const div = document.createElement('div'); div.className = 'preview-item'; div.innerHTML = (pf.type === 'image' ? `<img src="${URL.createObjectURL(pf.file)}">` : `<video src="${URL.createObjectURL(pf.file)}"></video>`) + `<button class="remove" onclick="removePending(${i})">×</button>`; grid.appendChild(div); }); }
+function removePending(i) { pendingFiles.splice(i, 1); renderPreviews(); }
+async function submitPost() {
+  if (currentRole !== 'author') { toast('仅作者可发布'); return; }
+  const text = $('postText').value.trim();
+  if (!text && pendingFiles.length === 0) { toast('请选择图片/视频或输入文字'); return; }
+  const isFeatured = $('featuredCheck').checked && pendingFiles.some(f => f.type === 'video');
+  const column = $('columnSelect').value;
+  const mediaIds = pendingFiles.map(p => p.id);
+  const expireVal = $('expireTime').value;
+  const expireAt = (column === 'preview' && expireVal) ? new Date(expireVal).getTime() : null;
+  const post = { id: Date.now(), author: currentProfile.name, authorName: currentProfile.name, authorAvatar: currentProfile.avatar, authorAvatarIsText: !!currentProfile.isText, ownerId: makeOwnerId(), text, mediaIds, danmaku: [], likes: [], isFeatured, column, expireAt, withdrawn: false };
   await savePostToDB(post);
-  如果 (expireAt) Toast('发布成功，预告将在 ' + new 日期(expireAt).toLocaleString('zh-CN', { hour12: false }) + ' 后自动消失'); else Toast('发布成功');
+  if (expireAt) toast('发布成功，预告将在 ' + new Date(expireAt).toLocaleString('zh-CN', { hour12: false }) + ' 后自动消失'); else toast('发布成功');
   closePublish(); await renderFeed();
 }
-window.onColumnChange = 函数(val) { $('expireRow').style.display = val === 'preview' ? 'flex' : 'none'; };
-window.clearExpire = 函数() { $('expireTime').value = ''; };
+window.onColumnChange = function(val) { $('expireRow').style.display = val === 'preview' ? 'flex' : 'none'; };
+window.clearExpire = function() { $('expireTime').value = ''; };
 
-函数 重置全部() { 会话存储.清除(); 本地存储.清除(); 位置.重新加载(); }
+function resetAll() { sessionStorage.clear(); localStorage.clear(); location.reload(); }
 
 // ===== 初始化 =====
-(异步 函数 初始化() {
+(async function init() {
   await initDB(); bindAvatarUrl();
   checkExpiredPreviews();
-  常量 savedRole = sessionStorage.getItem('role');
-  如果 (savedRole) { 当前角色 = 已保存角色; 当前个人资料 = 加载档案(已保存角色); 进入入口(); }
+  const savedRole = sessionStorage.getItem('role');
+  if (savedRole) { currentRole = savedRole; currentProfile = loadProfile(savedRole); enterEntry(); }
 })();
 </script>
 </body>
