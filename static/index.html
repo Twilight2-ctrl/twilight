@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>云上展厅 // TWILIGHT</title>
+<style>
+:root {
+  --bg: #F5EFE0; --bg-light: #FBF6EA; --fg: #2C2410; --fg-sub: #8C8268;
+  --line: #E0D5B8; --line-light: #EDE5CC; --accent: #C4956A;
+  --vhs-r: #D4534A; --vhs-y: #D4A839; --vhs-b: #6B5F9E;
+  --font-stack: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", sans-serif;
+  --font-mono: "SF Mono", "Consolas", "Menlo", monospace;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; padding: 0; height: 100%; background: var(--bg); color: var(--fg); font-family: var(--font-stack); overflow: hidden; }
+.screen { position: fixed; inset: 0; display: flex; flex-direction: column; z-index: 10; }
+.hidden { display: none !important; }
+.mono { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.5px; color: var(--fg-sub); }
+
+/* 1. 身份验证 */
+#auth { padding: 48px 32px; justify-content: center; max-width: 480px; margin: 0 auto; width: 100%; background: var(--bg); }
+.brand { text-align: center; margin-bottom: 48px; }
+.brand h1 { font-size: 24px; font-weight: 600; letter-spacing: 8px; margin: 0 0 12px; color: var(--fg); }
+.brand .sub { font-size: 11px; letter-spacing: 6px; color: var(--fg-sub); text-transform: uppercase; }
+.vhs-bar { display: flex; height: 2px; width: 80px; margin: 24px auto 0; overflow: hidden; }
+.vhs-bar div { flex: 1; }
+.vhs-bar .r { background: var(--vhs-r); } .vhs-bar .y { background: var(--vhs-y); } .vhs-bar .b { background: var(--vhs-b); }
+.auth-btn { display: flex; align-items: center; justify-content: space-between; padding: 18px 20px; border: 1px solid var(--line); border-radius: 12px; margin-bottom: 12px; font-size: 15px; background: var(--bg-light); transition: all 0.2s; }
+.auth-btn:active { background: var(--line-light); }
+.auth-btn.author { border-color: var(--accent); }
+.auth-btn.guest { color: var(--fg-sub); }
+.auth-btn .arrow { color: var(--fg-sub); font-family: var(--font-mono); }
+#keyInput { width: 100%; padding: 16px; border: 1px solid var(--line); border-radius: 12px; margin-bottom: 12px; font-size: 15px; outline: none; text-align: center; letter-spacing: 4px; background: var(--bg-light); color: var(--fg); }
+#keyInput:focus { border-color: var(--accent); }
+
+/* 2. 社区入口 */
+#entry { justify-content: center; align-items: center; background: var(--bg); }
+#entry .btn-community { padding: 18px 56px; border: 1px solid var(--fg); border-radius: 40px; font-size: 15px; letter-spacing: 10px; font-weight: 500; background: transparent; transition: all 0.3s; color: var(--fg); }
+#entry .btn-community:hover { background: var(--fg); color: var(--bg); }
+#entry .btn-community:active { transform: scale(0.96); }
+
+/* 3. 开篇动画 */
+#intro { background: #0a0a0f; justify-content: center; align-items: center; z-index: 20; transition: background 1s ease; }
+#intro.transitioning { background: var(--bg); }
+#intro svg { width: 100%; height: 50%; max-height: 300px; transition: transform 1.2s ease, opacity 1.2s ease; }
+#intro.transitioning svg { transform: translateY(-40px) scale(1.05); opacity: 0; }
+.rail { fill: none; stroke-linecap: round; }
+.name-reveal { position: absolute; bottom: 20%; text-align: center; opacity: 0; transform: translateY(20px); transition: all 1s cubic-bezier(0.16, 1, 0.3, 1); }
+.name-reveal.show { opacity: 1; transform: translateY(0); }
+#intro.transitioning .name-reveal { opacity: 0; transform: translateY(-30px); transition: all 1s ease; }
+.name-reveal .cn { font-size: 20px; letter-spacing: 12px; color: #FFF; font-weight: 300; margin-bottom: 8px; }
+.name-reveal .en { font-family: var(--font-mono); font-size: 10px; letter-spacing: 16px; color: #8E8E93; }
+
+/* 4. 社区主页 */
+#app { z-index: 5; background: var(--bg); opacity: 0; transform: translateY(30px); transition: opacity 0.8s ease-out, transform 0.8s ease-out; }
+#app.show { opacity: 1; transform: translateY(0); }
+.topbar { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--line); background: rgba(245,239,224,0.95); backdrop-filter: blur(10px); position: sticky; top: 0; z-index: 100; }
+.topbar .title { font-size: 14px; font-weight: 600; letter-spacing: 4px; }
+.topbar .actions { display: flex; gap: 12px; align-items: center; }
+
+.user-chip { display: flex; align-items: center; gap: 8px; padding: 4px 12px 4px 4px; border: 1px solid var(--line); border-radius: 20px; background: var(--bg-light); }
+.user-chip .ava { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; background: var(--line-light); }
+.user-chip .nm { font-size: 13px; font-weight: 600; max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.user-chip .role-tag { font-family: var(--font-mono); font-size: 9px; padding: 2px 6px; border-radius: 8px; }
+.user-chip .role-tag.author { background: var(--accent); color: #FFF; }
+.user-chip .role-tag.guest { background: var(--line-light); color: var(--fg-sub); }
+
+.avatar-options { display: flex; gap: 10px; margin-bottom: 16px; }
+.avatar-options .opt { flex: 1; border: 1px dashed var(--line); border-radius: 10px; padding: 14px 8px; text-align: center; font-size: 12px; color: var(--fg-sub); }
+.avatar-options .opt:active { background: var(--line-light); }
+.avatar-preview { width: 60px; height: 60px; border-radius: 50%; margin: 0 auto 16px; background: var(--line-light); background-size: cover; background-position: center; border: 2px solid var(--line); }
+
+.tab-bar { display: flex; border-bottom: 1px solid var(--line); background: var(--bg-light); }
+.tab-btn { flex: 1; padding: 14px 20px; font-size: 14px; text-align: center; border: none; background: none; color: var(--fg-sub); cursor: pointer; position: relative; transition: color 0.2s; }
+.tab-btn.active { color: var(--fg); font-weight: 600; }
+.tab-btn.active::after { content: ''; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 32px; height: 2px; background: var(--accent); border-radius: 1px; }
+
+.announcement { padding: 14px 16px; border-bottom: 1px solid var(--line-light); background: var(--bg-light); }
+.announcement .announce-text { font-size: 13px; line-height: 1.6; color: var(--fg); white-space: pre-wrap; }
+.announcement .announce-empty { font-size: 13px; color: var(--fg-sub); font-style: italic; }
+.announcement .edit-btn { margin-top: 8px; font-size: 12px; color: var(--accent); border: 1px solid var(--line); padding: 4px 12px; border-radius: 6px; }
+.announce-edit { width: 100%; border: 1px solid var(--line); border-radius: 8px; padding: 10px; font-size: 13px; outline: none; resize: none; min-height: 80px; font-family: inherit; background: var(--bg); color: var(--fg); margin-bottom: 8px; }
+.announce-save { font-size: 12px; color: #FFF; background: var(--accent); border: none; padding: 6px 16px; border-radius: 6px; }
+
+.feed { flex: 1; overflow-y: auto; padding: 16px 16px 100px; -webkit-overflow-scrolling: touch; }
+.feed-inner { max-width: 680px; margin: 0 auto; }
+
+.featured-video { width: 100%; background: #000; position: relative; margin-bottom: 16px; border-radius: 12px; overflow: hidden; }
+.featured-video video { width: 100%; max-height: 50vh; object-fit: contain; display: block; }
+.featured-label { position: absolute; top: 12px; left: 12px; background: rgba(0,0,0,0.6); color: #FFF; padding: 4px 10px; border-radius: 4px; font-size: 11px; letter-spacing: 2px; font-family: var(--font-mono); }
+
+.post { border: 1px solid var(--line); border-radius: 14px; padding: 18px 16px; background: var(--bg-light); margin-bottom: 16px; position: relative; }
+.post.deleting { opacity: 0.4; pointer-events: none; }
+.post-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.post-author-wrap { display: flex; align-items: center; gap: 10px; }
+.post-author-wrap .ava { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; background: var(--line-light); }
+.post-author { font-size: 14px; font-weight: 600; color: var(--fg); }
+.post-time { font-size: 11px; color: var(--fg-sub); font-family: var(--font-mono); }
+.post-content { font-size: 14px; line-height: 1.7; color: var(--fg); white-space: pre-wrap; margin-bottom: 10px; }
+.post-media { position: relative; width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; scroll-snap-type: x mandatory; display: flex; scrollbar-width: none; margin-bottom: 10px; border-radius: 8px; }
+.post-media::-webkit-scrollbar { display: none; }
+.post-media img, .post-media video { width: 100%; height: auto; max-height: 55vh; object-fit: contain; scroll-snap-align: start; flex-shrink: 0; background: #000; }
+.media-counter { position: absolute; top: 12px; right: 12px; background: rgba(0,0,0,0.6); color: #FFF; padding: 4px 10px; border-radius: 12px; font-family: var(--font-mono); font-size: 11px; }
+
+.post-actions { display: flex; align-items: center; gap: 16px; padding: 10px 0; border-bottom: 1px solid var(--line-light); margin-bottom: 10px; }
+.action-btn { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--fg-sub); background: none; border: none; padding: 0; cursor: pointer; transition: color 0.2s; }
+.action-btn:active { opacity: 0.6; }
+.action-btn.liked { color: var(--vhs-r); }
+.action-btn svg { width: 17px; height: 17px; stroke: currentColor; stroke-width: 1.5; fill: none; }
+.action-btn.liked svg { fill: var(--vhs-r); stroke: var(--vhs-r); }
+
+.dm-section { }
+.dm-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; max-height: 140px; overflow-y: auto; }
+.dm-item { display: flex; gap: 8px; align-items: flex-start; font-size: 13px; line-height: 1.5; }
+.dm-user { font-family: var(--font-mono); font-size: 11px; color: var(--accent); white-space: nowrap; padding-top: 2px; flex-shrink: 0; }
+.dm-text { color: var(--fg); flex: 1; }
+.dm-ctrl { font-size: 11px; color: var(--fg-sub); cursor: pointer; padding: 2px 6px; border: 1px solid var(--line); border-radius: 4px; flex-shrink: 0; }
+.dm-ctrl:active { background: var(--line-light); }
+.dm-form { display: flex; gap: 8px; border: 1px solid var(--line); border-radius: 12px; padding: 4px 4px 4px 16px; background: var(--bg); }
+.dm-form input { flex: 1; border: none; background: transparent; outline: none; font-size: 14px; padding: 8px 0; color: var(--fg); }
+.dm-form button { background: var(--accent); color: #FFF; border: none; border-radius: 8px; padding: 8px 16px; font-size: 13px; font-weight: 500; }
+
+.fab { position: fixed; right: 20px; bottom: 24px; width: 52px; height: 52px; border-radius: 50%; background: var(--accent); color: #FFF; display: flex; align-items: center; justify-content: center; font-size: 24px; box-shadow: 0 8px 24px rgba(196,149,106,0.3); z-index: 50; transition: transform 0.2s; }
+.fab:active { transform: scale(0.92); }
+
+.modal { position: fixed; inset: 0; background: rgba(44,36,16,0.5); backdrop-filter: blur(4px); z-index: 200; display: flex; align-items: flex-end; }
+.sheet { width: 100%; max-width: 680px; margin: 0 auto; background: var(--bg); border-radius: 20px 20px 0 0; padding: 24px 20px 34px; max-height: 90vh; overflow-y: auto; animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.sheet-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.sheet-header h3 { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: 2px; }
+.sheet-header .close { width: 32px; height: 32px; border-radius: 50%; background: var(--line-light); display: flex; align-items: center; justify-content: center; font-size: 18px; color: var(--fg-sub); }
+.upload-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+.upload-btn { padding: 20px 16px; border: 1px dashed var(--line); border-radius: 12px; text-align: center; font-size: 13px; color: var(--fg-sub); display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.upload-btn svg { width: 22px; height: 22px; stroke: currentColor; stroke-width: 1.5; fill: none; }
+.checkbox-row { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; font-size: 14px; flex-wrap: wrap; }
+.checkbox-row input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--accent); }
+.checkbox-row input[type="datetime-local"] { border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; font-size: 13px; background: var(--bg-light); color: var(--fg); outline: none; }
+.checkbox-row select { border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; font-size: 13px; background: var(--bg-light); color: var(--fg); outline: none; }
+.preview-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
+.preview-item { position: relative; width: calc(33.333% - 7px); aspect-ratio: 1; border-radius: 8px; overflow: hidden; background: var(--line-light); }
+.preview-item img, .preview-item video { width: 100%; height: 100%; object-fit: cover; }
+.preview-item .remove { position: absolute; top: 4px; right: 4px; width: 24px; height: 24px; border-radius: 50%; background: rgba(0,0,0,0.6); color: #FFF; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+.text-input { width: 100%; border: 1px solid var(--line); border-radius: 12px; padding: 14px; font-size: 14px; line-height: 1.6; outline: none; resize: none; min-height: 90px; margin-bottom: 16px; font-family: inherit; background: var(--bg-light); color: var(--fg); }
+.text-input:focus { border-color: var(--accent); }
+.publish-btn { width: 100%; padding: 14px; background: var(--accent); color: #FFF; border: none; border-radius: 12px; font-size: 15px; font-weight: 600; letter-spacing: 2px; }
+.toast { position: fixed; left: 50%; bottom: 100px; transform: translateX(-50%) translateY(20px); background: var(--fg); color: var(--bg); padding: 12px 24px; border-radius: 24px; font-size: 13px; opacity: 0; transition: all 0.3s; z-index: 1000; pointer-events: none; }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.empty { text-align: center; padding: 60px 20px; color: var(--fg-sub); }
+.empty .icon { font-size: 48px; margin-bottom: 16px; opacity: 0.2; }
+
+.offline-banner { background: var(--vhs-y); color: #FFF; font-size: 12px; text-align: center; padding: 8px; }
+</style>
+</head>
+<body>
+
+<!-- 1. 身份验证 -->
+<section id="auth" class="screen">
+  <div class="brand">
+    <h1>云上展厅</h1>
+    <div class="sub">Twilight System</div>
+    <div class="vhs-bar"><div class="r"></div><div class="y"></div><div class="b"></div></div>
+  </div>
+  <button class="auth-btn author" onclick="showKeyInput()">
+    <span>作者通道</span><span class="arrow">→</span>
+  </button>
+  <input id="keyInput" class="hidden" type="password" placeholder="输入密钥" onkeydown="if(event.key==='Enter')verifyAuthor()">
+  <button id="verifyBtn" class="auth-btn author hidden" onclick="verifyAuthor()">
+    <span>验证密钥</span><span class="arrow">→</span>
+  </button>
+  <button class="auth-btn guest" onclick="enterAsGuest()">
+    <span>游客访问</span><span class="arrow">→</span>
+  </button>
+  <div style="text-align:center; margin-top:32px;" class="mono">SYS.VER // 4.0.0 ONLINE</div>
+</section>
+
+<!-- 2. 社区入口 -->
+<section id="entry" class="screen hidden">
+  <button class="btn-community" onclick="startIntro()">社 区</button>
+</section>
+
+<!-- 3. 开篇动画 -->
+<section id="intro" class="screen hidden">
+  <svg viewBox="0 0 400 200" preserveAspectRatio="xMidYMid meet">
+    <path class="rail" stroke="#333" stroke-width="1" d="M200,200 L200,20"/>
+    <path class="rail" stroke="#555" stroke-width="1.5" d="M80,200 Q140,110 200,20"/>
+    <path class="rail" stroke="#555" stroke-width="1.5" d="M320,200 Q260,110 200,20"/>
+    <path class="rail" stroke="#222" stroke-width="2" d="M140,200 Q170,100 200,20"/>
+    <path class="rail" stroke="#222" stroke-width="2" d="M260,200 Q230,100 200,20"/>
+    <path class="rail" stroke="#FFF" stroke-width="2.5" d="M200,200 L200,20"/>
+  </svg>
+  <div class="name-reveal" id="nameReveal">
+    <div class="cn">云上展厅</div>
+    <div class="en">C L O U D &nbsp; G A L L E R Y</div>
+  </div>
+</section>
+
+<!-- 4. 社区主页 -->
+<section id="app" class="screen hidden">
+  <div id="offlineBanner" class="offline-banner hidden">当前未连接服务器，内容可能无法同步</div>
+  <div class="topbar">
+    <div class="title">CLOUD GALLERY</div>
+    <div class="actions">
+      <div class="user-chip" onclick="openProfile()">
+        <img class="ava" id="chipAvatar" src="">
+        <span class="nm" id="chipName"></span>
+        <span class="role-tag" id="chipRole"></span>
+      </div>
+      <button class="switch" onclick="resetAll()">切换</button>
+    </div>
+  </div>
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="switchTab('preview', this)">预告</button>
+    <button class="tab-btn" onclick="switchTab('completed', this)">已完成</button>
+  </div>
+  <div class="announcement" id="announcement"></div>
+  <div class="feed">
+    <div class="feed-inner" id="feedInner"></div>
+  </div>
+  <button id="fab" class="fab hidden" onclick="openPublish()">+</button>
+</section>
+
+<!-- 资料编辑弹窗 -->
+<div id="profileModal" class="modal hidden" onclick="if(event.target===this)closeProfile()">
+  <div class="sheet">
+    <div class="sheet-header">
+      <h3>编辑资料</h3>
+      <button class="close" onclick="closeProfile()">×</button>
+    </div>
+    <div class="avatar-preview" id="avatarPreview"></div>
+    <div class="avatar-options">
+      <label class="opt">
+        上传图片
+        <input type="file" accept="image/*" class="hidden" onchange="handleAvatarUpload(event)">
+      </label>
+      <div class="opt" onclick="useEmojiAvatar()">文字头像</div>
+    </div>
+    <input id="profileName" class="text-input" placeholder="名称" style="margin-bottom:16px; min-height:auto;">
+    <button class="publish-btn" onclick="saveProfile()">保存</button>
+  </div>
+</div>
+
+<!-- 发布弹窗 -->
+<div id="modal" class="modal hidden" onclick="if(event.target===this)closePublish()">
+  <div class="sheet">
+    <div class="sheet-header">
+      <h3>发布内容</h3>
+      <button class="close" onclick="closePublish()">×</button>
+    </div>
+    <div class="upload-actions">
+      <label class="upload-btn">
+        <svg viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+        <span>相册选图</span>
+        <input type="file" accept="image/*" multiple class="hidden" onchange="handleFiles(event, 'image')">
+      </label>
+      <label class="upload-btn">
+        <svg viewBox="0 0 24 24"><path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+        <span>相册视频</span>
+        <input type="file" accept="video/*" class="hidden" onchange="handleFiles(event, 'video')">
+      </label>
+    </div>
+    <label class="checkbox-row">
+      <input type="checkbox" id="featuredCheck"> 设为主页置顶视频
+    </label>
+    <label class="checkbox-row">
+      专栏：
+      <select id="columnSelect" onchange="onColumnChange()">
+        <option value="preview">预告</option>
+        <option value="completed">已完成</option>
+      </select>
+    </label>
+    <label class="checkbox-row" id="expireRow">
+      自动消失时间：
+      <input type="datetime-local" id="expireInput">
+      <span class="mono" style="font-size:10px;">（留空=不自动消失）</span>
+    </label>
+    <div class="preview-grid" id="previewGrid"></div>
+    <textarea id="postText" class="text-input" placeholder="写下你的文字（选填）"></textarea>
+    <button class="publish-btn" onclick="submitPost()">发 布</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== 配置 =====
+const API_BASE = (location.protocol === 'file:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+  ? 'http://localhost:3000'
+  : '';
+
+// ===== 身份 =====
+const ME_KEY = 'cloudgallery_me';
+let me = JSON.parse(localStorage.getItem(ME_KEY) || 'null');
+let posts = [];
+let allMedia = {}; // postId -> [{name, type, dataUrl}]
+let online = false;
+
+function saveMe() { localStorage.setItem(ME_KEY, JSON.stringify(me)); }
+
+function ensureMe() {
+  if (!me) {
+    me = {
+      baseId: 'g' + Math.random().toString(36).slice(2) + Date.now().toString(36),
+      role: 'guest', name: '游客_' + Math.random().toString(36).slice(2, 6),
+      avatar: 'https://via.placeholder.com/60/' + Math.floor(Math.random()*0xffffff).toString(16) + '/ffffff?text=%E5%AE%A2'
+    };
+    saveMe();
+  }
+  if (me.role === 'author') me.name = '云上展厅';
+  if (!me.avatar) me.avatar = 'https://via.placeholder.com/60';
+}
+function showKeyInput() { $('keyInput').classList.remove('hidden'); $('verifyBtn').classList.remove('hidden'); $('keyInput').focus(); }
+function verifyAuthor() {
+  if ($('keyInput').value.trim() !== '20100423') { toast('密钥错误'); return; }
+  me = { baseId: 'a0', role: 'author', name: '云上展厅', avatar: me && me.avatar || 'https://via.placeholder.com/60' };
+  saveMe(); enterEntry();
+}
+function enterAsGuest() { ensureMe(); enterEntry(); }
+function enterEntry() { $('auth').classList.add('hidden'); $('entry').classList.remove('hidden'); }
+function resetAll() { localStorage.clear(); me = null; ensureMe(); location.reload(); }
+
+// ===== API =====
+async function api(path, options = {}) {
+  try {
+    const res = await fetch(API_BASE + '/api' + path, { ...options, cache: 'no-store' });
+    online = true; $('offlineBanner').classList.add('hidden');
+    return await res.json();
+  } catch (e) {
+    online = false;
+    $('offlineBanner').classList.remove('hidden');
+    throw e;
+  }
+}
+
+// ===== 工具 =====
+const $ = id => document.getElementById(id);
+function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('show'), 2000); }
+function esc(s) { return (s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+function timeAgo(ts) {
+  const d = Date.now() - ts;
+  if (d < 60000) return '刚刚';
+  if (d < 3600000) return Math.floor(d / 60000) + '分钟前';
+  if (d < 86400000) return Math.floor(d / 3600000) + '小时前';
+  return new Date(ts).toLocaleDateString('zh-CN');
+}
+function mediaSrc(postId, idx) { const m = allMedia[postId]; return (m && m[idx]) ? m[idx].dataUrl : ''; }
+function authorIdOf(p) { return p.ownerId; }
+
+// ===== 开篇动画 =====
+function startIntro() {
+  $('entry').classList.add('hidden'); $('intro').classList.remove('hidden');
+  const rails = document.querySelectorAll('.rail');
+  rails.forEach(r => { const len = r.getTotalLength(); r.style.strokeDasharray = len; r.style.strokeDashoffset = len; r.style.transition = 'none'; });
+  requestAnimationFrame(() => {
+    rails.forEach((r, i) => { setTimeout(() => { r.style.transition = `stroke-dashoffset 1.8s cubic-bezier(0.4, 0, 0.2, 1)`; r.style.strokeDashoffset = '0'; }, i * 150); });
+  });
+  setTimeout(() => $('nameReveal').classList.add('show'), 1200);
+  setTimeout(() => $('intro').classList.add('transitioning'), 2800);
+  setTimeout(enterApp, 4200);
+}
+
+// ===== 主页 =====
+let currentTab = 'preview';
+async function enterApp() {
+  $('intro').classList.add('hidden');
+  $('app').classList.remove('hidden');
+  requestAnimationFrame(() => requestAnimationFrame(() => $('app').classList.add('show')));
+  $('chipAvatar').src = me.avatar; $('chipName').textContent = me.name;
+  $('chipRole').textContent = me.role === 'author' ? 'AUTHOR' : 'GUEST';
+  $('chipRole').className = 'role-tag ' + me.role;
+  $('fab').classList.toggle('hidden', me.role !== 'author');
+  await loadAll();
+}
+
+async function loadAll() {
+  try {
+    const data = await api('/posts');
+    posts = data.posts || [];
+    allMedia = data.media || {};
+    renderAnnouncement();
+    renderFeed();
+  } catch (e) { toast('加载失败，请检查服务器'); }
+}
+
+function switchTab(tab, btn) {
+  currentTab = tab;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderAnnouncement();
+  renderFeed();
+}
+
+// ===== 公告 =====
+function renderAnnouncement() {
+  const el = $('announcement');
+  const key = `announce_${currentTab}`;
+  const text = (posts.find(p => p.id === 'announce:' + currentTab) || {}).text;
+  if (me.role === 'author') {
+    if (text) el.innerHTML = `<div class="announce-text">${esc(text)}</div><button class="edit-btn" onclick="editAnnounce()">编辑</button>`;
+    else el.innerHTML = `<div class="announce-empty">暂无公告</div><button class="edit-btn" onclick="editAnnounce()">编辑</button>`;
+  } else el.innerHTML = text ? `<div class="announce-text">${esc(text)}</div>` : '';
+}
+function editAnnounce() {
+  const key = `announce_${currentTab}`;
+  const existing = posts.find(p => p.id === 'announce:' + currentTab);
+  const text = existing ? existing.text : '';
+  const el = $('announcement');
+  el.innerHTML = `<textarea class="announce-edit" id="announceEdit">${esc(text)}</textarea><button class="announce-save" onclick="saveAnnounce()">保存</button>`;
+  $('announceEdit').focus();
+}
+async function saveAnnounce() {
+  const text = $('announceEdit').value.trim();
+  try {
+    await api('/announce', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ column: currentTab, text }) });
+    await loadAll();
+    toast('公告已更新');
+  } catch (e) { toast('保存失败'); }
+}
+
+// ===== Feed =====
+function renderFeed() {
+  const container = $('feedInner');
+  const filtered = posts.filter(p => p.id !== 'announce:preview' && p.id !== 'announce:completed' && (p.column || 'preview') === currentTab && !isExpired(p));
+  container.innerHTML = '';
+
+  const featured = filtered.find(p => p.isFeatured && p.media && p.media.length > 0);
+  if (featured && mediaSrc(featured.id, 0)) {
+    const fv = document.createElement('div'); fv.className = 'featured-video';
+    fv.innerHTML = `<div class="featured-label">FEATURED VIDEO</div><video src="${mediaSrc(featured.id, 0)}" controls></video>`;
+    container.appendChild(fv);
+  }
+
+  if (filtered.length === 0) { container.innerHTML += `<div class="empty"><div class="icon">∅</div><div>暂无内容</div></div>`; return; }
+
+  for (const post of filtered) {
+    const card = document.createElement('div'); card.className = 'post'; card.id = 'post-' + post.id;
+    let mediaHtml = '';
+    if (post.media && post.media.length > 0) {
+      const items = post.media.map((m, i) => {
+        const src = mediaSrc(post.id, i);
+        if (!src) return '';
+        return m.type === 'image' ? `<img src="${src}">` : `<video src="${src}" controls></video>`;
+      }).filter(Boolean);
+      if (items.length > 0) mediaHtml = `<div class="post-media">${items.join('')}${items.length > 1 ? `<div class="media-counter mono">1 / ${items.length}</div>` : ''}</div>`;
+    }
+    const likeCount = post.likes ? post.likes.length : 0;
+    const isLiked = post.likes && post.likes.includes(me.baseId);
+    const dms = post.danmaku || [];
+    const dmHtml = dms.map((d, i) => {
+      const isMine = d.ownerId === me.baseId;
+      const showRecall = me.role === 'author' || isMine;
+      const ctrl = showRecall ? `<span class="dm-ctrl" onclick="recallDanmaku('${post.id}',${i})">${me.role === 'author' ? '屏蔽' : '撤回'}</span>` : '';
+      return `<div class="dm-item"><span class="dm-user">${esc(d.user)}</span><span class="dm-text">${esc(d.text)}</span>${ctrl}</div>`;
+    }).join('') || '<div class="mono" style="padding:12px 0; text-align:center;">暂无弹幕，来发第一条</div>';
+
+    const expireNote = post.expireAt ? `<div class="mono" style="font-size:10px; color:var(--fg-sub); margin-bottom:8px;">将于 ${new Date(post.expireAt).toLocaleString('zh-CN', {hour12:false})} 后自动消失</div>` : '';
+
+    card.innerHTML = `
+      <div class="post-header">
+        <div class="post-author-wrap"><img class="ava" src="${post.authorAvatar || 'https://via.placeholder.com/34'}"><span class="post-author">${esc(post.author)}</span></div>
+        <span class="post-time">${timeAgo(post.id)}</span>
+      </div>
+      ${expireNote}
+      ${post.text ? `<div class="post-content">${esc(post.text)}</div>` : ''}
+      ${mediaHtml}
+      <div class="post-actions">
+        <button class="action-btn ${isLiked ? 'liked' : ''}" onclick="toggleLike('${post.id}', this)">
+          <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+          <span class="like-count">${likeCount}</span>
+        </button>
+        <span class="action-btn"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg> 弹幕</span>
+      </div>
+      <div class="dm-section">
+        <div class="dm-list">${dmHtml}</div>
+        <div class="dm-form"><input placeholder="发送弹幕..." onkeydown="if(event.key==='Enter')sendDanmaku('${post.id}', this)"><button onclick="sendDanmaku('${post.id}', this.previousElementSibling)">发送</button></div>
+      </div>
+    `;
+    container.appendChild(card);
+  }
+}
+
+function isExpired(post) { return post.expireAt && Date.now() > post.expireAt; }
+
+// ===== 点赞 =====
+async function toggleLike(postId, btn) {
+  try {
+    await api('/like/' + postId, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ownerId: me.baseId }) });
+    const p = posts.find(x => x.id === postId);
+    if (p) { p.likes = p.likes || []; if (!p.likes.includes(me.baseId)) p.likes.push(me.baseId); btn.classList.add('liked'); btn.querySelector('.like-count').textContent = p.likes.length; }
+    toast('点赞成功');
+  } catch (e) { toast('操作失败'); }
+}
+
+// ===== 弹幕 =====
+async function sendDanmaku(postId, input) {
+  const text = input.value.trim(); if (!text) return;
+  try {
+    await api('/danmaku/' + postId, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ownerId: me.baseId, user: me.name, text }) });
+    input.value = '';
+    const p = posts.find(x => x.id === postId); if (p) { p.danmaku = p.danmaku || []; p.danmaku.push({ ownerId: me.baseId, user: me.name, text }); renderFeed(); }
+  } catch (e) { toast('发送失败'); }
+}
+async function recallDanmaku(postId, idx) {
+  try {
+    await api('/danmaku/' + postId + '/' + idx + '?ownerId=' + encodeURIComponent(me.baseId) + '&role=' + encodeURIComponent(me.role), { method: 'DELETE' });
+    const p = posts.find(x => x.id === postId); if (p && p.danmaku) p.danmaku.splice(idx, 1); renderFeed();
+    toast('已撤回');
+  } catch (e) { toast('操作失败'); }
+}
+
+// ===== 发布 =====
+function openPublish() { $('modal').classList.remove('hidden'); $('columnSelect').value = currentTab; onColumnChange(); }
+function closePublish() {
+  $('modal').classList.add('hidden'); pendingFiles = []; $('previewGrid').innerHTML = ''; $('postText').value = ''; $('featuredCheck').checked = false; $('expireInput').value = '';
+  document.querySelectorAll('.upload-btn input').forEach(i => i.value = '');
+}
+function onColumnChange() { $('expireRow').style.display = $('columnSelect').value === 'preview' ? 'flex' : 'none'; }
+
+async function handleFiles(e, type) {
+  const files = Array.from(e.target.files);
+  for (const file of files) {
+    const dataUrl = await new Promise(res => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(file); });
+    pendingFiles.push({ name: file.name, type: file.type.startsWith('image') ? 'image' : 'video', dataUrl });
+  }
+  renderPreviews(); e.target.value = '';
+}
+let pendingFiles = [];
+function renderPreviews() {
+  const grid = $('previewGrid'); grid.innerHTML = '';
+  pendingFiles.forEach((pf, i) => {
+    const div = document.createElement('div'); div.className = 'preview-item';
+    div.innerHTML = (pf.type === 'image' ? `<img src="${pf.dataUrl}">` : `<video src="${pf.dataUrl}"></video>`) + `<button class="remove" onclick="removePending(${i})">×</button>`;
+    grid.appendChild(div);
+  });
+}
+function removePending(i) { pendingFiles.splice(i, 1); renderPreviews(); }
+
+async function submitPost() {
+  if (me.role !== 'author') { toast('仅作者可发布'); return; }
+  const text = $('postText').value.trim();
+  if (!text && pendingFiles.length === 0) { toast('请选择图片/视频或输入文字'); return; }
+  const column = $('columnSelect').value;
+  const isFeatured = $('featuredCheck').checked && pendingFiles.some(f => f.type === 'video');
+  let expireAt = null;
+  if (column === 'preview') { const v = $('expireInput').value; if (v) expireAt = new Date(v).getTime(); }
+  const post = { ownerId: me.baseId, author: me.name, authorAvatar: me.avatar, text, media: pendingFiles.map(f => ({ name: f.name, type: f.type })), danmaku: [], likes: [], isFeatured, column, expireAt };
+  try {
+    await api('/posts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(post) });
+    for (let i = 0; i < pendingFiles.length; i++) {
+      const f = pendingFiles[i];
+      await api('/media/' + Date.now() + '_' + i, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ postId: post.id, index: i, dataUrl: f.dataUrl, type: f.type }) });
+    }
+    if (isFeatured) { /* featured 通过 post.isFeatured 标记，渲染时取 media[0] */ }
+    closePublish(); await loadAll(); toast('发布成功');
+  } catch (e) { toast('发布失败，请检查服务器'); }
+}
+
+// ===== 资料编辑 =====
+function openProfile() { $('profileName').value = me.name; $('avatarPreview').style.backgroundImage = `url("${me.avatar}")`; $('profileModal').classList.remove('hidden'); }
+function closeProfile() { $('profileModal').classList.add('hidden'); }
+async function handleAvatarUpload(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const dataUrl = await new Promise(res => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(file); });
+  me.avatar = dataUrl; saveMe(); $('avatarPreview').style.backgroundImage = `url("${dataUrl}")`;
+  await syncProfile();
+}
+function useEmojiAvatar() {
+  const emojis = ['🌙', '☀️', '⭐', '🌌', '🎨', '🖼️', '🎬', '🌸', '🦋', '🌊'];
+  const e = prompt('输入一个文字或 emoji 作为头像', '🌙') || '🌙';
+  const c = document.createElement('canvas'); c.width = c.height = 120;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#' + Math.floor(Math.random() * 0xffffff).toString(16).padStart(6, '0');
+  ctx.fillRect(0, 0, 120, 120);
+  ctx.fillStyle = '#fff'; ctx.font = '70px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(e, 60, 66);
+  me.avatar = c.toDataURL(); saveMe(); $('avatarPreview').style.backgroundImage = `url("${me.avatar}")`;
+  syncProfile();
+}
+async function saveProfile() {
+  const name = $('profileName').value.trim() || me.name;
+  me.name = me.role === 'author' ? '云上展厅' : name;
+  saveMe();
+  $('chipAvatar').src = me.avatar; $('chipName').textContent = me.name;
+  await syncProfile();
+  closeProfile(); toast('资料已保存');
+}
+async function syncProfile() {
+  try { await api('/profile', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ baseId: me.baseId, name: me.name, avatar: me.avatar, role: me.role }) }); }
+  catch (e) { /* 离线不影响本地 */ }
+}
+
+// ===== 初始化 =====
+(async function init() {
+  ensureMe();
+  const savedRole = sessionStorage.getItem('role');
+  if (savedRole) me.role = savedRole;
+  // 定时刷新，让其他人发的内容能自动出现
+  setInterval(async () => { try { const data = await api('/posts'); posts = data.posts || []; allMedia = data.media || {}; renderAnnouncement(); renderFeed(); } catch (e) {} }, 15000);
+})();
+</script>
+</body>
+</html>
