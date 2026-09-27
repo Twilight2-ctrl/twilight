@@ -289,6 +289,9 @@ const API_BASE = (location.protocol === 'file:' || location.hostname === 'localh
   : '';
 
 // ===== 身份 =====
+// 默认头像：内联 SVG，避免依赖外部图床导致加载失败
+const DEFAULT_AVATAR = 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60"><rect width="60" height="60" fill="#E0D5B8"/><text x="30" y="39" font-size="26" text-anchor="middle" fill="#8C8268" font-family="sans-serif">?</text></svg>');
+
 const ME_KEY = 'cloudgallery_me';
 let me = JSON.parse(localStorage.getItem(ME_KEY) || 'null');
 let posts = [];
@@ -302,17 +305,19 @@ function ensureMe() {
     me = {
       baseId: 'g' + Math.random().toString(36).slice(2) + Date.now().toString(36),
       role: 'guest', name: '游客_' + Math.random().toString(36).slice(2, 6),
-      avatar: 'https://via.placeholder.com/60/' + Math.floor(Math.random()*0xffffff).toString(16) + '/ffffff?text=%E5%AE%A2'
+      avatar: DEFAULT_AVATAR
     };
     saveMe();
   }
-  if (me.role === 'author') me.name = '云上展厅';
-  if (!me.avatar) me.avatar = 'https://via.placeholder.com/60';
+  if (!me.name) me.name = (me.role === 'author' ? '云上展厅' : me.name);
+  if (!me.avatar) me.avatar = '';
+  // 修复：不再强制覆盖名字，作者也能自定义名称
+  saveMe();
 }
 function showKeyInput() { $('keyInput').classList.remove('hidden'); $('verifyBtn').classList.remove('hidden'); $('keyInput').focus(); }
 function verifyAuthor() {
   if ($('keyInput').value.trim() !== '20100423') { toast('密钥错误'); return; }
-  me = { baseId: 'a0', role: 'author', name: '云上展厅', avatar: me && me.avatar || 'https://via.placeholder.com/60' };
+  me = { baseId: 'a0', role: 'author', name: '云上展厅', avatar: (me && me.avatar) || DEFAULT_AVATAR };
   saveMe(); enterEntry();
 }
 function enterAsGuest() { ensureMe(); enterEntry(); }
@@ -457,7 +462,7 @@ function renderFeed() {
 
     card.innerHTML = `
       <div class="post-header">
-        <div class="post-author-wrap"><img class="ava" src="${post.authorAvatar || 'https://via.placeholder.com/34'}"><span class="post-author">${esc(post.author)}</span></div>
+        <div class="post-author-wrap"><img class="ava" src="${post.authorAvatar || DEFAULT_AVATAR}"><span class="post-author">${esc(post.author)}</span></div>
         <span class="post-time">${timeAgo(post.id)}</span>
       </div>
       ${expireNote}
@@ -543,14 +548,19 @@ async function submitPost() {
   const isFeatured = $('featuredCheck').checked && pendingFiles.some(f => f.type === 'video');
   let expireAt = null;
   if (column === 'preview') { const v = $('expireInput').value; if (v) expireAt = new Date(v).getTime(); }
-  const post = { ownerId: me.baseId, author: me.name, authorAvatar: me.avatar, text, media: pendingFiles.map(f => ({ name: f.name, type: f.type })), danmaku: [], likes: [], isFeatured, column, expireAt };
+  // 关键修复：把图片/视频的 dataUrl 一起提交，服务器才能存下来
+  const mediaPayload = pendingFiles.map(f => ({ name: f.name, type: f.type, dataUrl: f.dataUrl }));
+  const post = { ownerId: me.baseId, author: me.name, authorAvatar: me.avatar, text, media: mediaPayload, danmaku: [], likes: [], isFeatured, column, expireAt };
   try {
-    await api('/posts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(post) });
-    for (let i = 0; i < pendingFiles.length; i++) {
-      const f = pendingFiles[i];
-      await api('/media/' + Date.now() + '_' + i, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ postId: post.id, index: i, dataUrl: f.dataUrl, type: f.type }) });
+    const result = await api('/posts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(post) });
+    const newId = result && result.id;
+    // 接住服务器生成的 id，再用它补传媒体（双重保险）
+    if (newId && pendingFiles.length > 0) {
+      for (let i = 0; i < pendingFiles.length; i++) {
+        const f = pendingFiles[i];
+        await api('/media/' + newId + '_' + i, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ postId: newId, index: i, dataUrl: f.dataUrl, type: f.type }) });
+      }
     }
-    if (isFeatured) { /* featured 通过 post.isFeatured 标记，渲染时取 media[0] */ }
     closePublish(); await loadAll(); toast('发布成功');
   } catch (e) { toast('发布失败，请检查服务器'); }
 }
@@ -578,7 +588,8 @@ function useEmojiAvatar() {
 }
 async function saveProfile() {
   const name = $('profileName').value.trim() || me.name;
-  me.name = me.role === 'author' ? '云上展厅' : name;
+  // 修复：作者也可以自定义名字，不再强制改成"云上展厅"
+  me.name = name;
   saveMe();
   $('chipAvatar').src = me.avatar; $('chipName').textContent = me.name;
   await syncProfile();

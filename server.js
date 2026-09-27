@@ -40,10 +40,26 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // 静态文件
-  let fp = pathname === '/' ? '/static/index.html' : pathname;
-  const safePath = path.join(__dirname, fp);
-  if (!safePath.startsWith(__dirname)) { res.writeHead(403); res.end(); return; }
+  // 静态文件：根目录 index.html 优先，其次 static/index.html
+  let candidates;
+  if (pathname === '/' || pathname === '/index.html') {
+    candidates = [
+      path.join(__dirname, 'index.html'),
+      path.join(__dirname, 'static', 'index.html'),
+      path.join(__dirname, 'public', 'index.html'),
+    ];
+  } else {
+    candidates = [path.join(__dirname, pathname), path.join(__dirname, 'static', pathname)];
+  }
+  const safePath = candidates.find(c => c.startsWith(__dirname) && fs.existsSync(c) && fs.statSync(c).isFile());
+  if (!safePath) {
+    // 兜底：列出实际存在的目录，方便排查
+    let listing = '';
+    try { listing = fs.readdirSync(__dirname).join(', '); } catch (e) {}
+    res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+    res.end('Not Found. 根目录实际有: ' + listing);
+    return;
+  }
   fs.readFile(safePath, (err, data) => {
     if (err) { res.writeHead(404, { 'Content-Type': 'text/plain' }); res.end('Not Found'); return; }
     res.writeHead(200, { 'Content-Type': TYPES[path.extname(safePath)] || 'application/octet-stream' });
@@ -59,6 +75,8 @@ async function handleAPI(req, res, p, q) {
   let posts = readPosts();
   // 每次请求前先清理过期
   posts = sweepExpired(posts);
+  // 把持久化的媒体文件读成 dataUrl 内联，确保前端能直接显示图片/视频
+  syncMediaIntoPosts(posts);
 
   // GET /api/posts
   if (p === '/posts' && req.method === 'GET') {
